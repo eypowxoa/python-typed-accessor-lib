@@ -1,13 +1,20 @@
 from collections.abc import Callable
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 
 from python_json_typed_accessor_with_extra_long_name import (
+    BadEncodingError,
+    BadJsonError,
+    FileAccessError,
     MissingKeyError,
     NoneValueError,
+    TooBigError,
     TypedAccessor,
     TypedAccessorError,
     UnprocessedKeyError,
     WrongTypeError,
+    read_json,
 )
 
 
@@ -233,3 +240,46 @@ class TypedAccessorTest(TestCase):
                 for key in test[2]:
                     t.extract_value(key)
                 self.assertIs(test[4], t.has_key(test[3]))
+
+
+class ReadJsonTest(TestCase):
+    def setUp(self) -> None:
+        self.temp = TemporaryDirectory()
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def test_read_json(self) -> None:
+        test_list: list[
+            tuple[str, str, bytes | None, str | None, int | None, object]
+        ] = [
+            ("fail if bad encoding", "t.json", b"\xff", "utf8", None, BadEncodingError),
+            ("fail if bad json", "t.json", b"bad", None, None, BadJsonError),
+            ("fail if directory", "", None, None, None, FileAccessError),
+            ("fail if not exists", "no.json", None, None, None, FileAccessError),
+            ("fail if too big", "t.json", b"[]", None, 1, TooBigError),
+            ("fail if wrong type", "t.json", b"1", None, None, BadJsonError),
+            ("read non-utf8", "t.json", b'["\xb8"]', "cp1251", None, "ё"),
+            ("read utf8", "t.json", '["ё"]'.encode("utf8"), None, None, "ё"),
+        ]
+        for test in test_list:
+            with self.subTest("should %s" % (test[0],)):
+                path = Path(self.temp.name).joinpath(test[1])
+                content = test[2]
+                if content is not None:
+                    with open(path, "wb") as file:
+                        file.write(content)
+                kwargs = {}
+                encoding = test[3]
+                if encoding is not None:
+                    kwargs["encoding"] = encoding
+                limit = test[4]
+                if limit is not None:
+                    kwargs["limit"] = limit
+                expected = test[5]
+                if isinstance(expected, type) and issubclass(expected, Exception):
+                    with self.assertRaises(expected):
+                        read_json(path, **kwargs)
+                else:
+                    result = read_json(path, **kwargs)
+                    self.assertEqual(expected, result.extract_str(0))

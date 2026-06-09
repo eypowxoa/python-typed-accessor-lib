@@ -9,6 +9,7 @@ from python_json_typed_accessor_with_extra_long_name import (
     MissingKeyError,
     TypedAccessor,
     TypedAccessorError,
+    read_json,
 )
 
 json_data = {"a": ["b", "c"], "d": ["e", "f"]}
@@ -31,4 +32,6 @@ try:
     accessor.extract_list("a")
 except MissingKeyError as key_error:
     print(key_error.args[0])  # outputs Missing a
+# reading file
+accessor = read_json("file.json", encoding="utf8", limit=1000)
 ```

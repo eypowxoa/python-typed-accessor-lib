@@ -1,3 +1,7 @@
+from json import JSONDecodeError, loads
+from pathlib import Path
+
+
 class TypedAccessorError(Exception):
     """Base class for all typed accessor errors."""
 
@@ -372,3 +376,66 @@ class TypedAccessor:
     def has_key(self, key: int | str) -> bool:
         """Checks if the key is present and not yet extracted."""
         return key in self._keys
+
+
+class ReadJsonError(TypedAccessorError):
+    """Base class for all read JSON errors."""
+
+
+class FileAccessError(ReadJsonError):
+    """Any error from the file system."""
+
+
+class BadEncodingError(ReadJsonError):
+    """Wrong file content encoding."""
+
+
+class BadJsonError(ReadJsonError):
+    """Error in JSON format or file is not a JSON."""
+
+
+class TooBigError(ReadJsonError):
+    """File is too big for processing."""
+
+
+def read_json(
+    path: str | Path, /, *, encoding: str = "utf8", limit: int = 100_000_000
+) -> TypedAccessor:
+    try:
+        with open(path, "rb") as file:
+            try:
+                buffer = file.read(limit)
+                if file.read(1):
+                    raise TooBigError("Too big %s. More than %d bytes" % (path, limit))
+                return TypedAccessor(loads(buffer.decode(encoding)))
+            except JSONDecodeError as json_error:
+                raise BadJsonError(
+                    "Bad json in %s at %d:%d. %s"
+                    % (
+                        path,
+                        json_error.lineno,
+                        json_error.colno,
+                        json_error.msg,
+                    )
+                )
+            except TooBigError:
+                raise
+            except TypedAccessorError as type_error:
+                raise BadJsonError(
+                    "Bad json in %s. %s"
+                    % (
+                        path,
+                        type_error.args[0],
+                    )
+                )
+            except UnicodeError:
+                raise BadEncodingError("Bad text encoding in %s" % (path,))
+    except OSError as open_error:
+        raise FileAccessError(
+            "Can not read %s. [%d] %s"
+            % (
+                path,
+                open_error.errno,
+                open_error.strerror,
+            )
+        )
