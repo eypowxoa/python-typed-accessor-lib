@@ -401,6 +401,13 @@ class TooBigError(ReadJsonError):
 def read_json(
     path: str | Path, /, *, encoding: str = "utf8", limit: int = 100_000_000
 ) -> TypedAccessor:
+    """
+    Read JSON from the `path`.
+    Raises BadEncodingError if file encoding is not same as `encoding` argument.
+    Raises BadJsonError if file content is not a valid JSON or not an array or object.
+    Raises FileAccessError if file not exists or any other system error.
+    Raises TooBigError if file size is greater than `limit` argument.
+    """
     try:
         with open(path, "rb") as file:
             try:
