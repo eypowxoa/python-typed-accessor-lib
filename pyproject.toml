@@ -1,0 +1,19 @@
+[project]
+name = "python-json-typed-accessor-with-extra-long-name"
+version = "1.1.0"
+authors = [
+  { name="eypowxoa", email="nepozitron@gmail.com" },
+]
+description = "Extract data from JSON with type checking."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/eypowxoa/python-json-typed-accessor-with-extra-long-name"
+Issues = "https://github.com/eypowxoa/python-json-typed-accessor-with-extra-long-name/issues"
