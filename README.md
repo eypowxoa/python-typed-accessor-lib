@@ -5,7 +5,7 @@ Extract data from JSON with type checking.
 Usage:
 
 ```python
-from python_json_typed_accessor_with_extra_long_name import (
+from typed_accessor_lib import (
     MissingKeyError,
     TypedAccessor,
     TypedAccessorError,
