@@ -249,19 +249,24 @@ class ReadJsonTest(TestCase):
 
     def test_read_json(self) -> None:
         test_list: list[
-            tuple[str, str, bytes | None, str | None, int | None, object]
+            tuple[str, str, bytes | None, str | None, int | None, type, object]
         ] = [
-            ("fail if bad encoding", "t.json", b"\xff", "utf8", None, BadEncodingError),
-            ("fail if bad json", "t.json", b"bad", None, None, BadJsonError),
-            ("fail if directory", "", None, None, None, FileAccessError),
-            ("fail if not exists", "no.json", None, None, None, FileAccessError),
-            ("fail if too big", "t.json", b"[]", None, 1, TooBigError),
-            ("fail if wrong type", "t.json", b"1", None, None, BadJsonError),
-            ("read non-utf8", "t.json", b'["\xb8"]', "cp1251", None, "ё"),
-            ("read utf8", "t.json", '["ё"]'.encode("utf8"), None, None, "ё"),
+            ("bad encoding", "t.json", b"\xff", "utf8", None, None, BadEncodingError),
+            ("bad json", "t.json", b"bad", None, None, None, BadJsonError),
+            ("directory", "", None, None, None, None, FileAccessError),
+            ("not exists", "no.json", None, None, None, None, FileAccessError),
+            ("too big", "t.json", b"[]", None, 1, None, TooBigError),
+            ("wrong type", "t.json", b"1", None, None, None, BadJsonError),
+            ("not dict", "t.json", b"[]", None, None, str, BadJsonError),
+            ("not list", "t.json", b"{}", None, None, int, BadJsonError),
+            ("non-utf8", "t.json", b'["\xb8"]', "cp1251", None, None, "ё"),
+            ("utf8", "t.json", '["ё"]'.encode("utf8"), None, None, None, "ё"),
         ]
         for test in test_list:
-            with self.subTest("should %s" % (test[0],)):
+            expected = test[6]
+            fail = isinstance(expected, type) and issubclass(expected, Exception)
+            do = "fail if" if fail else "read"
+            with self.subTest("should %s %s" % (do, test[0])):
                 path = Path(self.temp.name).joinpath(test[1])
                 content = test[2]
                 if content is not None:
@@ -274,8 +279,10 @@ class ReadJsonTest(TestCase):
                 limit = test[4]
                 if limit is not None:
                     kwargs["limit"] = limit
-                expected = test[5]
-                if isinstance(expected, type) and issubclass(expected, Exception):
+                key_type = test[5]
+                if key_type is not None:
+                    kwargs["key_type"] = key_type
+                if fail:
                     with self.assertRaises(expected):
                         read_json(path, **kwargs)
                 else:

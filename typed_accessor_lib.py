@@ -23,22 +23,22 @@ class UnprocessedKeyError(TypedAccessorError):
     """Not all keys were processed. Args [message: str, keys: list[int | str]]"""
 
 
-class TypedAccessor:
+class TypedAccessor[T: int | str]:
     """Extract data from JSON with type checking."""
 
-    def __init__(self, source: object):
+    def __init__(self, source: object, expected: type[dict | list] = dict | list):
         """
         Initialize the typed accessor. `source` is a data extracted from JSON,
         can be only dict or list containing bool, dict, float, int, list, None, str.
         You should not modify or access the source after initialization.
         Raises WrongTypeError if source is not a dict or list.
         """
-        if not isinstance(source, dict) and not isinstance(source, list):
+        if not isinstance(source, expected):
             raise WrongTypeError(
-                "Not a list or dict, got %s" % (type(source),), "", source
+                "Not a %s, got %s" % (expected, type(source)), "", source
             )
         self._source: dict | list = source
-        self._keys: set[int | str] = set(
+        self._keys: set[T] = set(
             source.keys() if isinstance(source, dict) else range(len(source))
         )
 
@@ -54,7 +54,7 @@ class TypedAccessor:
                 remaining_keys,
             )
 
-    def extract_list(self, key: int | str) -> "TypedAccessor":
+    def extract_list(self, key: T) -> "TypedAccessor[int]":
         """
         Extracts list value of the `key`.
         Only one access per key is allowed.
@@ -69,7 +69,7 @@ class TypedAccessor:
             )
         return self.__class__(result)
 
-    def extract_list_nullable(self, key: int | str) -> "TypedAccessor | None":
+    def extract_list_nullable(self, key: T) -> "TypedAccessor[int] | None":
         """
         Extracts list value of the `key` or None if value is None.
         Only one access per key is allowed.
@@ -81,7 +81,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_list_nullable_optional(self, key: int | str) -> "TypedAccessor | None":
+    def extract_list_nullable_optional(self, key: T) -> "TypedAccessor[int] | None":
         """
         Extracts list value of the `key` or None if value is None or key is missing.
         Raises WrongTypeError if value is not a list.
@@ -93,7 +93,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_list_optional(self, key: int | str) -> "TypedAccessor | None":
+    def extract_list_optional(self, key: T) -> "TypedAccessor[int] | None":
         """
         Extracts list value of the `key` or None if key is missing.
         Raises NoneValueError if value is None.
@@ -104,7 +104,7 @@ class TypedAccessor:
         except MissingKeyError:
             return None
 
-    def extract_bool(self, key: int | str) -> bool:
+    def extract_bool(self, key: T) -> bool:
         """
         Extracts bool value of the `key`.
         Only one access per key is allowed.
@@ -119,7 +119,7 @@ class TypedAccessor:
             )
         return result
 
-    def extract_bool_nullable(self, key: int | str) -> bool | None:
+    def extract_bool_nullable(self, key: T) -> bool | None:
         """
         Extracts bool value of the `key` or None if value is None.
         Only one access per key is allowed.
@@ -131,7 +131,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_bool_nullable_optional(self, key: int | str) -> bool | None:
+    def extract_bool_nullable_optional(self, key: T) -> bool | None:
         """
         Extracts bool value of the `key` or None if value is None or key is missing.
         Raises WrongTypeError if value is not a bool.
@@ -143,7 +143,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_bool_optional(self, key: int | str) -> bool | None:
+    def extract_bool_optional(self, key: T) -> bool | None:
         """
         Extracts bool value of the `key` or None if key is missing.
         Raises NoneValueError if value is None.
@@ -154,7 +154,7 @@ class TypedAccessor:
         except MissingKeyError:
             return None
 
-    def extract_float(self, key: int | str) -> float:
+    def extract_float(self, key: T) -> float:
         """
         Extracts float value of the `key`.
         Only one access per key is allowed.
@@ -169,7 +169,7 @@ class TypedAccessor:
             )
         return float(result)
 
-    def extract_float_nullable(self, key: int | str) -> float | None:
+    def extract_float_nullable(self, key: T) -> float | None:
         """
         Extracts float value of the `key` or None if value is None.
         Only one access per key is allowed.
@@ -181,7 +181,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_float_nullable_optional(self, key: int | str) -> float | None:
+    def extract_float_nullable_optional(self, key: T) -> float | None:
         """
         Extracts float value of the `key` or None if value is None or key is missing.
         Raises WrongTypeError if value is not a float.
@@ -193,7 +193,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_float_optional(self, key: int | str) -> float | None:
+    def extract_float_optional(self, key: T) -> float | None:
         """
         Extracts float value of the `key` or None if key is missing.
         Raises NoneValueError if value is None.
@@ -204,7 +204,7 @@ class TypedAccessor:
         except MissingKeyError:
             return None
 
-    def extract_int(self, key: int | str) -> int:
+    def extract_int(self, key: T) -> int:
         """
         Extracts int value of the `key`.
         Only one access per key is allowed.
@@ -219,7 +219,7 @@ class TypedAccessor:
             )
         return result
 
-    def extract_int_nullable(self, key: int | str) -> int | None:
+    def extract_int_nullable(self, key: T) -> int | None:
         """
         Extracts int value of the `key` or None if value is None.
         Only one access per key is allowed.
@@ -231,7 +231,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_int_nullable_optional(self, key: int | str) -> int | None:
+    def extract_int_nullable_optional(self, key: T) -> int | None:
         """
         Extracts int value of the `key` or None if value is None or key is missing.
         Raises WrongTypeError if value is not an int.
@@ -243,7 +243,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_int_optional(self, key: int | str) -> int | None:
+    def extract_int_optional(self, key: T) -> int | None:
         """
         Extracts int value of the `key` or None if key is missing.
         Raises NoneValueError if value is None.
@@ -254,7 +254,7 @@ class TypedAccessor:
         except MissingKeyError:
             return None
 
-    def extract_dict(self, key: int | str) -> "TypedAccessor":
+    def extract_dict(self, key: T) -> "TypedAccessor[str]":
         """
         Extracts dict value of the `key`.
         Only one access per key is allowed.
@@ -269,7 +269,7 @@ class TypedAccessor:
             )
         return self.__class__(result)
 
-    def extract_dict_nullable(self, key: int | str) -> "TypedAccessor | None":
+    def extract_dict_nullable(self, key: T) -> "TypedAccessor[str] | None":
         """
         Extracts dict value of the `key` or None if value is None.
         Only one access per key is allowed.
@@ -281,7 +281,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_dict_nullable_optional(self, key: int | str) -> "TypedAccessor | None":
+    def extract_dict_nullable_optional(self, key: T) -> "TypedAccessor[str] | None":
         """
         Extracts dict value of the `key` or None if value is None or key is missing.
         Raises WrongTypeError if value is not a dict.
@@ -293,7 +293,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_dict_optional(self, key: int | str) -> "TypedAccessor | None":
+    def extract_dict_optional(self, key: T) -> "TypedAccessor[str] | None":
         """
         Extracts dict value of the `key` or None if key is missing.
         Raises NoneValueError if value is None.
@@ -304,7 +304,7 @@ class TypedAccessor:
         except MissingKeyError:
             return None
 
-    def extract_str(self, key: int | str) -> str:
+    def extract_str(self, key: T) -> str:
         """
         Extracts str value of the `key`.
         Only one access per key is allowed.
@@ -319,7 +319,7 @@ class TypedAccessor:
             )
         return result
 
-    def extract_str_nullable(self, key: int | str) -> str | None:
+    def extract_str_nullable(self, key: T) -> str | None:
         """
         Extracts str value of the `key` or None if value is None.
         Only one access per key is allowed.
@@ -331,7 +331,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_str_nullable_optional(self, key: int | str) -> str | None:
+    def extract_str_nullable_optional(self, key: T) -> str | None:
         """
         Extracts str value of the `key` or None if value is None or key is missing.
         Raises WrongTypeError if value is not a str.
@@ -343,7 +343,7 @@ class TypedAccessor:
         except NoneValueError:
             return None
 
-    def extract_str_optional(self, key: int | str) -> str | None:
+    def extract_str_optional(self, key: T) -> str | None:
         """
         Extracts str value of the `key` or None if key is missing.
         Raises NoneValueError if value is None.
@@ -354,7 +354,7 @@ class TypedAccessor:
         except MissingKeyError:
             return None
 
-    def extract_value(self, key: int | str) -> object:
+    def extract_value(self, key: T) -> object:
         """
         Extracts unknown type value of the `key`.
         Only one access per key is allowed.
@@ -370,11 +370,11 @@ class TypedAccessor:
             raise NoneValueError("None %s" % (key,), key)
         return result
 
-    def get_remaining_keys(self) -> list[int | str]:
+    def get_remaining_keys(self) -> list[T]:
         """Returns a keys that was not yet extracted."""
         return list(sorted(self._keys))
 
-    def has_key(self, key: int | str) -> bool:
+    def has_key(self, key: T) -> bool:
         """Checks if the key is present and not yet extracted."""
         return key in self._keys
 
@@ -399,9 +399,14 @@ class TooBigError(ReadJsonError):
     """File is too big for processing."""
 
 
-def read_json(
-    path: str | Path, /, *, encoding: str = "utf8", limit: int = 100_000_000
-) -> TypedAccessor:
+def read_json[T: int | str](
+    path: str | Path,
+    /,
+    *,
+    encoding: str = "utf8",
+    limit: int = 100_000_000,
+    key_type: type[T] = int | str,
+) -> TypedAccessor[T]:
     """
     Read JSON from the `path`.
     Raises BadEncodingError if file encoding is not same as `encoding` argument.
@@ -409,13 +414,19 @@ def read_json(
     Raises FileAccessError if file not exists or any other system error.
     Raises TooBigError if file size is greater than `limit` argument.
     """
+    if key_type is int:
+        source_type = list
+    elif key_type is str:
+        source_type = dict
+    else:
+        source_type = dict | list
     try:
         with open(path, "rb") as file:
             try:
                 buffer = file.read(limit)
                 if file.read(1):
                     raise TooBigError("Too big %s. More than %d bytes" % (path, limit))
-                return TypedAccessor(loads(buffer.decode(encoding)))
+                return TypedAccessor[T](loads(buffer.decode(encoding)), source_type)
             except JSONDecodeError as json_error:
                 raise BadJsonError(
                     "Bad json in %s at %d:%d. %s"

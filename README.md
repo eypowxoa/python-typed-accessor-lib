@@ -13,7 +13,7 @@ from typed_accessor_lib import (
 )
 
 json_data = {"a": ["b", "c"], "d": ["e", "f"]}
-accessor = TypedAccessor(json_data)
+accessor = TypedAccessor[str](json_data, dict)
 # getting values
 child_a = accessor.extract_list("a")
 print(child_a.extract_str(0))  # outputs b
@@ -33,5 +33,5 @@ try:
 except MissingKeyError as key_error:
     print(key_error.args[0])  # outputs Missing a
 # reading file
-accessor = read_json("file.json", encoding="utf8", limit=1000)
+accessor = read_json("file.json", encoding="utf8", limit=1000, key_type=int)
 ```
