@@ -1,4 +1,4 @@
-# JSON Typed Accessor With Extra Long Name
+# Typed Accessor Lib
 
 Extract data from JSON with type checking.
 
