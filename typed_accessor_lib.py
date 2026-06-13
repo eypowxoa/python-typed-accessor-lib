@@ -1,6 +1,10 @@
 from json import JSONDecodeError
 from json import loads
 from pathlib import Path
+from types import GenericAlias
+from types import UnionType
+from typing import get_args
+from typing import get_origin
 
 
 class TypedAccessorError(Exception):
@@ -23,29 +27,55 @@ class UnprocessedKeyError(TypedAccessorError):
     """Not all keys were processed. Args [message: str, keys: list[int | str]]"""
 
 
-class TypedAccessor[T: int | str]:
+class TypedAccessor[T]:
     """Extract data from JSON with type checking."""
 
-    def __init__(self, source: object, expected: type[dict | list] = dict | list):
+    def __init__(
+        self,
+        source: object,
+        expected: (
+            type[dict[T, object]]
+            | type[list[T]]
+            | type[type[dict[T, object]] | type[list[T]]]
+        ) = (dict[str, object] | list[int]),
+    ):
         """
         Initialize the typed accessor. `source` is a data extracted from JSON,
         can be only dict or list containing bool, dict, float, int, list, None, str.
         You should not modify or access the source after initialization.
         Raises WrongTypeError if source is not a dict or list.
         """
-        if not isinstance(source, expected):
+        self._source: dict | list
+        self._keys: set[T] = set()
+
+        for expected_source_type in (
+            get_args(expected) if isinstance(expected, UnionType) else (expected,)
+        ):
+            if isinstance(expected_source_type, GenericAlias):
+                expected_origin = get_origin(expected_source_type)
+                if issubclass(expected_origin, dict):
+                    key_type = get_args(expected_source_type)[0]
+                    if isinstance(source, expected_origin):
+                        self._keys = set[T]()
+                        for key in source.keys():
+                            if not isinstance(key, key_type):
+                                raise WrongTypeError(
+                                    "Keys must be %s, got %s" % (key_type, type(key))
+                                )
+                            self._keys.add(key)
+                        self._source = source
+                    continue
+                elif issubclass(expected_origin, list):
+                    if isinstance(source, expected_origin):
+                        self._source = source
+                        self._keys.update(range(len(source)))
+                    continue
+            raise TypeError("Bad expected type %s" % (expected,))
+
+        if not hasattr(self, "_source"):
             raise WrongTypeError(
                 "Not a %s, got %s" % (expected, type(source)), "", source
             )
-        self._source: dict | list = source
-        self._keys: set[T] = set(
-            source.keys() if isinstance(source, dict) else range(len(source))
-        )
-        if isinstance(source, dict):
-            for key in source.keys():
-                if not isinstance(key, str):
-                    raise WrongTypeError("Not a str key, got %s", (type(key),))
-                self._keys.add(key)
 
     def assert_empty(self) -> None:
         """
@@ -72,7 +102,7 @@ class TypedAccessor[T: int | str]:
             raise WrongTypeError(
                 "Not an list %s, got %s" % (key, type(result)), key, result
             )
-        return self.__class__(result)
+        return self.__class__(result, list[int])
 
     def extract_list_nullable(self, key: T) -> "TypedAccessor[int] | None":
         """
@@ -272,7 +302,7 @@ class TypedAccessor[T: int | str]:
             raise WrongTypeError(
                 "Not a dict %s, got %s" % (key, type(result)), key, result
             )
-        return self.__class__(result)
+        return self.__class__(result, dict[str, object])
 
     def extract_dict_nullable(self, key: T) -> "TypedAccessor[str] | None":
         """
@@ -414,7 +444,7 @@ def read_json[T: int | str](
     *,
     encoding: str = "utf8",
     limit: int = 100_000_000,
-    key_type: type[T] = int | str,
+    key_type: type[T] = str,
 ) -> TypedAccessor[T]:
     """
     Read JSON from the `path`.
@@ -424,18 +454,18 @@ def read_json[T: int | str](
     Raises TooBigError if file size is greater than `limit` argument.
     """
     if key_type is int:
-        source_type = list
+        source_type = list[int]
     elif key_type is str:
-        source_type = dict
+        source_type = dict[str, object]
     else:
-        source_type = dict | list
+        raise TypeError("Bad key type %s" % (key_type,))
     try:
         with open(path, "rb") as file:
             try:
                 buffer = file.read(limit)
                 if file.read(1):
                     raise TooBigError("Too big %s. More than %d bytes" % (path, limit))
-                return TypedAccessor[T](loads(buffer.decode(encoding)), source_type)
+                return TypedAccessor(loads(buffer.decode(encoding)), source_type)
             except JSONDecodeError as json_error:
                 raise BadJsonError(
                     "Bad json in %s at %d:%d. %s"

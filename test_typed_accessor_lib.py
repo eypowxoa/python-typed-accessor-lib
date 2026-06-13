@@ -18,7 +18,8 @@ from typed_accessor_lib import read_json
 
 class TypedAccessorTest(TestCase):
     def test_init(self) -> None:
-        test_list: list[tuple[str, object, bool]] = [
+        test_list: list[tuple[str, object, bool | type]] = [
+            ("fail for bad expected", str, TypeError),
             ("fail for false", False, True),
             ("fail for float", 1.2, True),
             ("fail for int", 1, True),
@@ -34,11 +35,18 @@ class TypedAccessorTest(TestCase):
         ]
         for test in test_list:
             with self.subTest("should %s" % (test[0],)):
+                expected_type = (
+                    dict[str, object]
+                    if isinstance(test[1], dict)
+                    else (str if isinstance(test[1], type) else list[int])
+                )
                 if test[2]:
-                    with self.assertRaises(TypedAccessorError):
-                        TypedAccessor(test[1])
+                    expected_error = TypedAccessorError if test[2] is True else test[2]
+                    with self.assertRaises(expected_error):
+                        TypedAccessor(test[1], expected_type)
                 else:
-                    self.assertIsInstance(TypedAccessor(test[1]), TypedAccessor)
+                    result = TypedAccessor(test[1], expected_type)
+                    self.assertIsInstance(result, TypedAccessor)
 
     def test_assert_empty(self) -> None:
         test_list: list[tuple[str, object, list[int | str], bool]] = [
@@ -53,7 +61,10 @@ class TypedAccessorTest(TestCase):
         ]
         for test in test_list:
             with self.subTest("should %s" % (test[0],)):
-                t = TypedAccessor(test[1])
+                t = TypedAccessor(
+                    test[1],
+                    dict[str, object] if isinstance(test[1], dict) else list[int],
+                )
                 for key in test[2]:
                     t.extract_value(key)
                 if test[3]:
@@ -82,7 +93,10 @@ class TypedAccessorTest(TestCase):
             with self.subTest(
                 "%s should %s" % (getattr(method, "__name__", repr(method)), test[0])
             ):
-                t = TypedAccessor(test[1])
+                t = TypedAccessor(
+                    test[1],
+                    dict[str, object] if isinstance(test[1], dict) else list[int],
+                )
                 for check in test[2]:
                     expected = check[1]
                     if isinstance(expected, type) and issubclass(expected, Exception):
@@ -219,7 +233,10 @@ class TypedAccessorTest(TestCase):
         ]
         for test in test_list:
             with self.subTest("should %s" % (test[0],)):
-                t = TypedAccessor(test[1])
+                t = TypedAccessor(
+                    test[1],
+                    dict[str, object] if isinstance(test[1], dict) else list[int],
+                )
                 for key in test[2]:
                     t.extract_value(key)
                 self.assertEqual(test[3], t.get_remaining_keys())
@@ -237,7 +254,10 @@ class TypedAccessorTest(TestCase):
         ]
         for test in test_list:
             with self.subTest("should %s" % (test[0],)):
-                t = TypedAccessor(test[1])
+                t = TypedAccessor(
+                    test[1],
+                    dict[str, object] if isinstance(test[1], dict) else list[int],
+                )
                 for key in test[2]:
                     t.extract_value(key)
                 self.assertEqual(test[3], t.get_remaining_values())
@@ -253,7 +273,10 @@ class TypedAccessorTest(TestCase):
         ]
         for test in test_list:
             with self.subTest("should %s" % (test[0],)):
-                t = TypedAccessor(test[1])
+                t = TypedAccessor(
+                    test[1],
+                    dict[str, object] if isinstance(test[1], dict) else list[int],
+                )
                 for key in test[2]:
                     t.extract_value(key)
                 self.assertIs(test[4], t.has_key(test[3]))
@@ -270,6 +293,7 @@ class ReadJsonTest(TestCase):
         test_list: list[
             tuple[str, str, bytes | None, str | None, int | None, type, object]
         ] = [
+            ("bad key type", "t.json", b"[]", None, None, object, TypeError),
             ("bad encoding", "t.json", b"\xff", "utf8", None, None, BadEncodingError),
             ("bad json", "t.json", b"bad", None, None, None, BadJsonError),
             ("directory", "", None, None, None, None, FileAccessError),
@@ -278,8 +302,8 @@ class ReadJsonTest(TestCase):
             ("wrong type", "t.json", b"1", None, None, None, BadJsonError),
             ("not dict", "t.json", b"[]", None, None, str, BadJsonError),
             ("not list", "t.json", b"{}", None, None, int, BadJsonError),
-            ("non-utf8", "t.json", b'["\xb8"]', "cp1251", None, None, "ё"),
-            ("utf8", "t.json", '["ё"]'.encode("utf8"), None, None, None, "ё"),
+            ("non-utf8", "t.json", b'["\xb8"]', "cp1251", None, int, "ё"),
+            ("utf8", "t.json", '["ё"]'.encode("utf8"), None, None, int, "ё"),
         ]
         for test in test_list:
             expected = test[6]
