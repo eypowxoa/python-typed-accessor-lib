@@ -41,6 +41,11 @@ class TypedAccessor[T: int | str]:
         self._keys: set[T] = set(
             source.keys() if isinstance(source, dict) else range(len(source))
         )
+        if isinstance(source, dict):
+            for key in source.keys():
+                if not isinstance(key, str):
+                    raise WrongTypeError("Not a str key, got %s", (type(key),))
+                self._keys.add(key)
 
     def assert_empty(self) -> None:
         """

@@ -26,6 +26,7 @@ class TypedAccessorTest(TestCase):
             ("fail for object", set(), True),
             ("fail for str", "a", True),
             ("fail for true", True, True),
+            ("fail for wrong key", {1: 1, 2: 2}, True),
             ("pass for empty dict", {}, False),
             ("pass for empty list", [], False),
             ("pass for filled dict", {"a": 1, "b": 2}, False),
