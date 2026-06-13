@@ -11,7 +11,7 @@ only-include = [
 
 [project]
 name = "typed-accessor-lib"
-version = "2.0.0"
+version = "3.0.0"
 authors = [
   { name="eypowxoa", email="nepozitron@gmail.com" },
 ]

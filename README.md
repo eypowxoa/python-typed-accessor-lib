@@ -13,7 +13,7 @@ from typed_accessor_lib import (
 )
 
 json_data = {"a": ["b", "c"], "d": ["e", "f"]}
-accessor = TypedAccessor[str](json_data, dict)
+accessor = TypedAccessor(json_data, dict[str, object])
 # getting values
 child_a = accessor.extract_list("a")
 print(child_a.extract_str(0))  # outputs b
