@@ -224,6 +224,24 @@ class TypedAccessorTest(TestCase):
                     t.extract_value(key)
                 self.assertEqual(test[3], t.get_remaining_keys())
 
+    def test_get_remaining_values(self) -> None:
+        test_list: list[tuple[str, object, list[int | str], list[object]]] = [
+            ("be empty for empty dict", [], [], []),
+            ("be empty for empty list", [], [], []),
+            ("be empty for processed dict", {"a": 1}, ["a"], []),
+            ("be empty for processed list", [1], [0], []),
+            ("be sorted by key for dict", {"b": 1, "a": 2}, [], [2, 1]),
+            ("be sorted by key for list", [2, 1], [], [2, 1]),
+            ("get values for dict", {"a": 1}, [], [1]),
+            ("get values for list", [1], [], [1]),
+        ]
+        for test in test_list:
+            with self.subTest("should %s" % (test[0],)):
+                t = TypedAccessor(test[1])
+                for key in test[2]:
+                    t.extract_value(key)
+                self.assertEqual(test[3], t.get_remaining_values())
+
     def test_has_key(self) -> None:
         test_list: list[tuple[str, object, list[int | str], int | str, bool]] = [
             ("be True if exists in list", [1], [], 0, True),

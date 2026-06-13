@@ -379,6 +379,10 @@ class TypedAccessor[T: int | str]:
         """Returns a keys that was not yet extracted."""
         return list(sorted(self._keys))
 
+    def get_remaining_values(self) -> list[object]:
+        """Returns a values that was not yet extracted."""
+        return [self.extract_value(k) for k in self.get_remaining_keys()]
+
     def has_key(self, key: T) -> bool:
         """Checks if the key is present and not yet extracted."""
         return key in self._keys
